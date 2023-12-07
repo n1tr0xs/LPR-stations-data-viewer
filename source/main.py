@@ -4,7 +4,7 @@ import datetime as dt
 import locale
 from collections.abc import Iterable, Mapping
 from numbers import Number
-from decimal import Decimal, ConversionSyntax, InvalidOperation
+from decimal import Decimal, ConversionSyntax, InvalidOperation, DivisionByZero, Overflow, Context, Inexact, Rounded, ROUND_HALF_EVEN
 import pyperclip
 
 from PyQt6 import QtCore, QtGui, QtWidgets
@@ -70,15 +70,20 @@ def get_json(page: str, parameters: Mapping={}, *, server: str='http://10.55.1.3
     except requests.exceptions.JSONDecodeError:
         return list()
 
-def format_unit(value: Number, base: str, target: str, table: dict=convert_table) -> str:
+def format_unit(value: Number, base: str, target: str, prec=None, table: dict=convert_table) -> str:
     '''
     Converts given value from unit to unit.
     Formats the result to string `value unit`.
     '''
+    
     try:
-        return f'{table[base][target](value)}'
+        res = table[base][target](value)
     except KeyError:
-        return f'{value}'
+        res = value
+    if prec is not None:
+        return f'{round(res, prec)}'
+    return f'{res}'
+    
     
 class WorkerSignals(QObject):
     '''
@@ -281,8 +286,12 @@ class MainWindow(QMainWindow):
                 try:
                     value = Decimal(value)
                 except (ConversionSyntax, InvalidOperation):
-                    value = '#'                
-                text = format_unit(value, unit, wanted_unit.get(unit, unit))
+                    value = '#'
+                match (wu:=wanted_unit.get(unit, unit)):
+                    case 'C':
+                        text = format_unit(value, unit, wu, prec=1)
+                    case _:
+                        text = format_unit(value, unit, wu)
                 self.meas_for_table[bufr][station] = text
         print('measurements received.')
                 
