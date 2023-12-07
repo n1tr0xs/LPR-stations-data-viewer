@@ -1,2 +1,2 @@
 @echo off
-pyinstaller --clean --onedir --noconsole --noconfirm --name "LPR meteorological stations data viewer" "main.py"
+pyinstaller --noconfirm --clean --log-level FATAL --onedir --name "LPR stations data viewer" --noconsole   "main.py"
