@@ -75,7 +75,6 @@ def format_unit(value: Number, base: str, target: str, prec=None, table: dict=co
     Converts given value from unit to unit.
     Formats the result to string `value unit`.
     '''
-    
     try:
         res = table[base][target](value)
     except KeyError:
@@ -148,26 +147,31 @@ class MainWindow(QMainWindow):
         self.setCentralWidget(self.centralWidget)
 
         self.timer = QtCore.QTimer()
-        self.timer.setInterval(10*1000)
+        self.timer.setInterval(30*1000)
         self.timer.timeout.connect(self.create_worker)
 
         self.setFont(QtGui.QFont('Times New Roman', 12))
         self.setWindowTitle('Просмотр данных метеорологических станций ЛНР')
+        self.setWindowIcon(QtGui.QIcon('icon.ico'))
 
+        self.update_terms_btn = QPushButton('Обновить список сроков')
+        self.update_terms_btn.clicked.connect(self.get_terms)
+        self.layout.addWidget(self.update_terms_btn)
+        
         self.label_term = QLabel('Срок:')
-        self.label_term.setAlignment(Qt.AlignmentFlag.AlignRight)
-        self.layout.addWidget(self.label_term, 0, 0)
+        self.label_term.setAlignment(Qt.AlignmentFlag.AlignRight|Qt.AlignmentFlag.AlignVCenter)
+        self.layout.addWidget(self.label_term, 0, 1)
 
         self.term_box = QComboBox()
-        self.layout.addWidget(self.term_box, 0, 1)
+        self.layout.addWidget(self.term_box, 0, 2)
 
         self.label_last_update = QLabel('Последнее обновление:')
-        self.label_last_update.setAlignment(Qt.AlignmentFlag.AlignRight)
-        self.layout.addWidget(self.label_last_update, 0, 2)
+        self.label_last_update.setAlignment(Qt.AlignmentFlag.AlignRight|Qt.AlignmentFlag.AlignVCenter)
+        self.layout.addWidget(self.label_last_update, 0, 3)
         
         self.table = QTableWidget()
         self.table.cellDoubleClicked.connect(lambda i, j: pyperclip.copy(self.table.item(i, j).text()))
-        self.layout.addWidget(self.table, 1, 0, 1, 3)
+        self.layout.addWidget(self.table, 1, 0, 1, 4)
         
         self.get_stations()
         self.get_measurements_types()
@@ -217,7 +221,8 @@ class MainWindow(QMainWindow):
             for row in resp:
                 moment = row['point_at']
                 last_id = row['id']
-                self.terms.add(moment)            
+                self.terms.add(moment)
+        self.term_box.clear()
         self.terms = sorted(filter(bool, self.terms), reverse=True)
         for term in self.terms:
             str_term = dt.datetime.utcfromtimestamp(term).strftime('%c')
