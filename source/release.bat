@@ -1,3 +1,5 @@
 @echo off
-7z a "dist\LPR stations data viewer" -tzip
+cd dist\
+del "LPR stations data viewer.zip"
+7z a "LPR stations data viewer" -tzip
 gh release create
