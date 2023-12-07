@@ -1,0 +1,1 @@
+@cmd /K "Scripts\activate.bat && cd source\"
