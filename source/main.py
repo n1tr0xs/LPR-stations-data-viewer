@@ -1,13 +1,13 @@
 import sys
-import requests
-import datetime as dt
 import locale
-from collections.abc import Iterable, Mapping
+import datetime as dt
+from decimal import Decimal, ConversionSyntax, InvalidOperation
+from collections.abc import Iterable
 from numbers import Number
-from decimal import Decimal, ConversionSyntax, InvalidOperation, DivisionByZero, Overflow, Context, Inexact, Rounded, ROUND_HALF_EVEN
+import traceback
+import requests
 import pyperclip
-
-from PyQt6 import QtCore, QtGui, QtWidgets
+from PyQt6 import QtCore, QtGui
 from PyQt6.QtCore import Qt, pyqtSlot, QThreadPool, QObject, QRunnable, pyqtSignal
 from PyQt6.QtWidgets import *
 
@@ -47,7 +47,7 @@ wanted_unit = {
 
 locale.setlocale(locale.LC_TIME, 'ru_RU.UTF-8')
 
-def get_json(page: str, parameters: Mapping={}, *, server: str='http://10.55.1.30:8640') -> list:
+def get_json(page: str, parameters: dict={}, *, server: str='http://10.55.1.30:8640') -> list:
     '''
     Gets json from `server` using given `page` with given `parameters`.
     Returns list.
@@ -66,9 +66,9 @@ def get_json(page: str, parameters: Mapping={}, *, server: str='http://10.55.1.3
         url += '&'
     print(url)
     try:
-        return requests.get(url).json()
+        return requests.get(url, timeout=5).json()
     except requests.exceptions.JSONDecodeError:
-        return list()
+        return []
 
 def format_unit(value: Number, base: str, target: str, prec=None, table: dict=convert_table) -> str:
     '''
@@ -82,8 +82,7 @@ def format_unit(value: Number, base: str, target: str, prec=None, table: dict=co
     if prec is not None:
         return f'{round(res, prec)}'
     return f'{res}'
-    
-    
+
 class WorkerSignals(QObject):
     '''
     Defines the signals available from a running worker thread.
@@ -106,7 +105,7 @@ class Worker(QRunnable):
     :param kwargs: Keywords to pass to the callback function
     '''
     def __init__(self, fn, *args, **kwargs):
-        super(Worker, self).__init__()
+        super().__init__()
         self.fn = fn
         self.args = args
         self.kwargs = kwargs
@@ -129,17 +128,17 @@ class Worker(QRunnable):
             self.signals.finished.emit()
 
 class MainWindow(QMainWindow):
-    keyPressed = QtCore.pyqtSignal(int)
-    
+    keyPressed = pyqtSignal(int)
+
     def __init__(self):
         '''
         Creates main window.
         '''
         super().__init__()
-        
+
         self.settings = QtCore.QSettings('n1tr0xs', 'sinop measurement view')
         self.threadpool = QThreadPool.globalInstance()
-                        
+
         self.layout = QGridLayout()
 
         self.centralWidget = QWidget()
@@ -150,14 +149,15 @@ class MainWindow(QMainWindow):
         self.timer.setInterval(30*1000)
         self.timer.timeout.connect(self.create_worker)
 
-        self.setFont(QtGui.QFont('Times New Roman', 12))
+        self.font = QtGui.QFont('Times New Roman', 12)
+        self.setFont(self.font)
         self.setWindowTitle('Просмотр данных метеорологических станций ЛНР')
         self.setWindowIcon(QtGui.QIcon('icon.ico'))
 
         self.update_terms_btn = QPushButton('Обновить список сроков')
         self.update_terms_btn.clicked.connect(self.get_terms)
         self.layout.addWidget(self.update_terms_btn)
-        
+
         self.label_term = QLabel('Срок:')
         self.label_term.setAlignment(Qt.AlignmentFlag.AlignRight|Qt.AlignmentFlag.AlignVCenter)
         self.layout.addWidget(self.label_term, 0, 1)
@@ -166,23 +166,28 @@ class MainWindow(QMainWindow):
         self.layout.addWidget(self.term_box, 0, 2)
 
         self.label_last_update = QLabel('Последнее обновление:')
-        self.label_last_update.setAlignment(Qt.AlignmentFlag.AlignRight|Qt.AlignmentFlag.AlignVCenter)
+        self.label_last_update.setAlignment(
+            Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter
+        )
         self.layout.addWidget(self.label_last_update, 0, 3)
-        
+
         self.table = QTableWidget()
         self.table.cellDoubleClicked.connect(lambda i, j: pyperclip.copy(self.table.item(i, j).text()))
         self.layout.addWidget(self.table, 1, 0, 1, 4)
-        
+
         self.get_stations()
         self.get_measurements_types()
         self.set_headers()
         self.term_box.currentIndexChanged.connect(self.timer.timeout.emit)
         self.get_terms()
         self.timer.start()
-        
+
         self.restore_settings()
-        self.show()        
-        
+        self.show()
+
+        self.meas_for_table = {}
+        self.point = {}
+
     def create_worker(self):
         '''
         Creates and starts worker for info update.
@@ -190,25 +195,25 @@ class MainWindow(QMainWindow):
         worker = Worker(self.update_data)
         worker.signals.finished.connect(self.on_data_update)
         self.threadpool.start(worker)
-        
+
     def on_data_update(self):
         '''
         Changes `self.label_last_update` text after data in table updated.
         '''
         self.label_last_update.setText(f'Последнее обновление: {dt.datetime.now()}')
-        
+
     def get_stations(self):
         '''
         Gets station list.
         '''
         print('getting stations...')
-        self.stations = dict()
+        self.stations = {}
         for row in get_json('stations.json'):
             index, name = row['sindex'], row['station_name']
             if name.startswith('МС'):
                 self.stations[index] = name
         print('stations received.')
-        
+
     def get_terms(self):
         '''
         Gets available terms.
@@ -217,7 +222,14 @@ class MainWindow(QMainWindow):
         print('getting terms...')
         self.terms = set()
         last_id = 0
-        while (resp := get_json('get', {'streams': 0, 'stations': self.stations.keys(), 'lastid': last_id})):
+        while (resp := get_json(
+            'get',
+            {
+                'streams': 0,
+                'stations': self.stations.keys(),
+                'lastid': last_id
+            }
+        )):
             for row in resp:
                 moment = row['point_at']
                 last_id = row['id']
@@ -235,13 +247,13 @@ class MainWindow(QMainWindow):
         Gets meas units for each measurement type.
         '''
         print('getting measurements types...')
-        self.bufr_name = dict()
-        self.bufr_unit = dict()
-        bufrs = set()        
+        self.bufr_name = {}
+        self.bufr_unit = {}
+        bufrs = set()
         for station in self.stations:
             for row in get_json('station_taking.json', {'station': station}):
                 bufrs.add(row['code'])
-        
+
         for row in get_json('measurement.json'):
             bufr = row['bufrcode']
             if bufr not in bufrs:
@@ -258,36 +270,50 @@ class MainWindow(QMainWindow):
         Sets vertical header labels.
         '''
         print('setting headers...')
-        names = [f'{name}' for _, name in sorted(self.stations.items(), key=lambda x: x[0])]
+        font = self.font
+        font.setBold(True)
+        names = [
+            f'{name}'
+            for _, name in sorted(
+                self.stations.items(),
+                key=lambda x: x[0]
+            )
+        ]
         self.table.setColumnCount(len(names))
         self.table.setHorizontalHeaderLabels(names)
-
-        names = [f'{self.bufr_name[bufr]}, [{self.bufr_unit[bufr]}]' for bufr in sorted(self.bufr_name)]
+        for i in range(len(names)):
+            self.table.horizontalHeaderItem(i).setFont(font)
+        names = [
+            f'{self.bufr_name[bufr]}, [{self.bufr_unit[bufr]}]'
+            for bufr in sorted(self.bufr_name)
+        ]
         self.table.setRowCount(len(names))
         self.table.setVerticalHeaderLabels(names)
+        for i in range(len(names)):
+            self.table.verticalHeaderItem(i).setFont(font)
         print('headers set.')
-        
+
     def get_measurements(self):
         '''
         Gets measurements.
         '''
         print('getting measurements...')
-        self.meas_for_table = dict()
-        ready = dict()
-        for station in self.stations:
-            print(station, self.stations[station])
+        self.meas_for_table = {}
+        ready = {}
+        for station, name in self.stations.items():
+            print(station, name)
             for r in get_json('get', {'stations': station, 'streams': 0, 'point_at': self.point}):
                 _id = r['id']
                 bufr = r['code']
                 station = r['station']
                 value = r['value']
-                unit = r['unit']                
+                unit = r['unit']
                 prev = ready.get((bufr, station), None)
                 if (prev is not None) and (prev < _id):
                     continue
                 ready[(bufr, station)] = _id
                 if self.meas_for_table.get(bufr, None) is None:
-                    self.meas_for_table[bufr] = dict()
+                    self.meas_for_table[bufr] = {}
                 try:
                     value = Decimal(value)
                 except (ConversionSyntax, InvalidOperation):
@@ -299,7 +325,7 @@ class MainWindow(QMainWindow):
                         text = format_unit(value, unit, wu)
                 self.meas_for_table[bufr][station] = text
         print('measurements received.')
-                
+
     def update_table_values(self):
         '''
         Updates values of `self.table` items.
@@ -315,31 +341,31 @@ class MainWindow(QMainWindow):
                     item.setFlags(item.flags() & ~Qt.ItemFlag.ItemIsEditable)
                     self.table.setItem(i, j, item)
         print('table values updated.')
-                    
+
     def update_data(self):
         '''
         Gets info using REST API from server.
         Updates info in `self.table`.
         '''
         print('updating data...')
-        self.label_last_update.setText(f'Обновление, подождите...')
-        self.point = self.terms[self.term_box.currentIndex()]        
+        self.label_last_update.setText('Обновление, подождите...')
+        self.point = self.terms[self.term_box.currentIndex()]
         self.get_measurements()
         self.update_table_values()
         self.table.resizeColumnsToContents()
         self.table.resizeRowsToContents()
         print('data updated.')
-        
+
     def closeEvent(self, event:QtGui.QCloseEvent):
         '''
         Overrides closeEvent.
-        Saves window settings (geomtry, position).
+        Saves window settings (geometry, position).
         Stops the `self.timer`.
         '''
         self.save_settings()
         self.timer.stop()
         super().closeEvent(event)
-        
+
     def save_settings(self):
         '''
         Saves current window geometry.
@@ -359,7 +385,7 @@ class MainWindow(QMainWindow):
         super().keyPressEvent(event)
         if event.key() == QtCore.Qt.Key.Key_Escape:
             self.close()
-        
+
 if __name__ == "__main__":
     app = QApplication(sys.argv)
     w = MainWindow()
