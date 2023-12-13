@@ -12,11 +12,11 @@ from PyQt6 import QtCore, QtGui
 from PyQt6.QtCore import Qt, pyqtSlot, QThreadPool, QObject, QRunnable, pyqtSignal
 from PyQt6.QtWidgets import *
 
-wanted_unit = config['Units']
+
 locale.setlocale(locale.LC_TIME, 'ru_RU.UTF-8')
 config = configparser.ConfigParser()
 config.read('settings.ini', encoding='UTF-8')
-
+wanted_unit = config['Units']
 convert_table = {
     'k': {
       'C': lambda x: x - Decimal('273.15'),
@@ -331,7 +331,7 @@ class MainWindow(QMainWindow):
                 try:
                     item = QTableWidgetItem(self.meas_for_table[bufr][station])
                 except KeyError:
-                    item = QTableWidgetItem('-'*3)                
+                    item = QTableWidgetItem('-'*3)
                 item.setFlags(item.flags() & ~Qt.ItemFlag.ItemIsEditable)
                 self.table.setItem(i, j, item)
         print('table values updated.')
@@ -382,7 +382,7 @@ class MainWindow(QMainWindow):
                 self.close()
             case QtCore.Qt.Key.Key_F5:
                 self.get_terms()
-                
+
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
