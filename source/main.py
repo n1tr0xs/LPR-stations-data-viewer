@@ -1,5 +1,6 @@
 import sys
 import locale
+import configparser
 import datetime as dt
 from decimal import Decimal, ConversionSyntax, InvalidOperation
 from collections.abc import Iterable
@@ -10,6 +11,9 @@ import pyperclip
 from PyQt6 import QtCore, QtGui
 from PyQt6.QtCore import Qt, pyqtSlot, QThreadPool, QObject, QRunnable, pyqtSignal
 from PyQt6.QtWidgets import *
+
+config = configparser.ConfigParser()
+config.read('settings.ini', encoding='UTF-8')
 
 convert_table = {
     'k': {
@@ -47,7 +51,7 @@ wanted_unit = {
 
 locale.setlocale(locale.LC_TIME, 'ru_RU.UTF-8')
 
-def get_json(page: str, parameters: dict={}, *, server: str='http://10.55.1.30:8640') -> list:
+def get_json(page: str, parameters: dict={}) -> list:
     '''
     Gets json from `server` using given `page` with given `parameters`.
     Returns list.
@@ -59,6 +63,7 @@ def get_json(page: str, parameters: dict={}, *, server: str='http://10.55.1.30:8
     :param server: Server base url.
     :type server: string
     '''
+    server = config['Server']['server']
     url = f'{server}/{page}?'
     for k, v in parameters.items():
         url += f'{k}='
