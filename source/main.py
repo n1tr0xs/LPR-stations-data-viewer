@@ -179,8 +179,7 @@ class MainWindow(QMainWindow):
         self.set_headers()
         self.get_terms()
         self.term_box.currentIndexChanged.connect(self.timer.timeout.emit)
-        self.timer.start()
-        self.timer.timeout.emit()
+        self.timer.start(0)
 
         self.restore_settings()
         self.show()
@@ -327,7 +326,6 @@ class MainWindow(QMainWindow):
         Updates values of `self.table` items.
         '''
         print('updating table values...')
-        print(self.meas_for_table)
         for i, bufr in enumerate(sorted(self.bufr_name)):
             for j, station in enumerate(sorted(self.stations)):
                 try:
