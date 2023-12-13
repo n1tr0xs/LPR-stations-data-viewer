@@ -136,7 +136,7 @@ class MainWindow(QMainWindow):
 
         self.settings = QtCore.QSettings('n1tr0xs', 'sinop measurement view')
         self.threadpool = QThreadPool.globalInstance()
-
+        
         self.layout = QGridLayout()
 
         self.centralWidget = QWidget()
@@ -144,7 +144,8 @@ class MainWindow(QMainWindow):
         self.setCentralWidget(self.centralWidget)
 
         self.timer = QtCore.QTimer()
-        self.timer.setInterval(10*1000)
+        self.timer_interval = 10 * 1000
+        self.timer.setInterval(self.timer_interval)
         self.timer.timeout.connect(self.create_worker)
 
         self.font = QtGui.QFont('Times New Roman', 12)
@@ -176,9 +177,10 @@ class MainWindow(QMainWindow):
         self.get_stations()
         self.get_measurements_types()
         self.set_headers()
-        self.term_box.currentIndexChanged.connect(self.timer.timeout.emit)
         self.get_terms()
+        self.term_box.currentIndexChanged.connect(self.timer.timeout.emit)
         self.timer.start()
+        self.timer.timeout.emit()
 
         self.restore_settings()
         self.show()
@@ -342,12 +344,14 @@ class MainWindow(QMainWindow):
         Updates info in `self.table`.
         '''
         print('updating data...')
+        self.timer.stop()
         self.label_last_update.setText('Обновление, подождите...')
         self.point = self.terms[self.term_box.currentIndex()]
         self.get_measurements()
         self.update_table_values()
         self.table.resizeColumnsToContents()
         self.table.resizeRowsToContents()
+        self.timer.start(self.timer_interval)
         print('data updated.')
 
     def closeEvent(self, event:QtGui.QCloseEvent):
