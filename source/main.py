@@ -175,11 +175,25 @@ class MainWindow(QMainWindow):
         self.table.cellDoubleClicked.connect(lambda i, j: pyperclip.copy(self.table.item(i, j).text()))
         self.layout.addWidget(self.table, 1, 0, 1, 4)
 
+        menu = QMenu('Файл', self)
+
+        conf_act = QtGui.QAction('Конфигуратор', self)
+        conf_act.setStatusTip('Конфигуратор')
+        conf_act.triggered.connect(self.run_configurator)
+        menu.addAction(conf_act)
+
+        exit_act = QtGui.QAction('Выход', self)
+        exit_act.setStatusTip('Выход')
+        exit_act.triggered.connect(self.close)
+        menu.addAction(exit_act)
+        
+        self.menuBar().addMenu(menu)
+        
         self.get_stations()
         self.get_measurements_types()
         self.set_headers()
-        self.term_box.currentIndexChanged.connect(self.timer.timeout.emit)
         self.get_terms()
+        self.term_box.currentIndexChanged.connect(self.timer.timeout.emit)
         self.timer.start()
 
         self.restore_settings()
@@ -187,6 +201,8 @@ class MainWindow(QMainWindow):
 
         self.meas_for_table = {}
         self.point = {}
+
+##        self.run_configurator()
 
     def create_worker(self):
         '''
@@ -389,7 +405,30 @@ class MainWindow(QMainWindow):
                 self.close()
             case QtCore.Qt.Key.Key_F5:
                 self.get_terms()
+
+    def run_configurator(self):
+        ConfiguratorWindow(self).exec()
                 
+
+class ConfiguratorWindow(QDialog):
+    def __init__(self, parent=None):
+        '''
+        
+        '''
+        super().__init__(parent)
+
+        self.layout = QGridLayout()
+        self.setWindowTitle('Конфигуратор')
+
+        self.stations_layout = QVBoxLayout()
+        self.stations_layout.addWidget(QLabel('Станции:'))
+        for row in get_json('stations.json'):
+            n = row['station_name']
+            self.stations_layout.addWidget(QCheckBox(n))
+        self.layout.addLayout(self.stations_layout, 0, 0)
+
+        self.setLayout(self.layout)
+        self.show()        
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
