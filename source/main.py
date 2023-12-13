@@ -202,7 +202,7 @@ class MainWindow(QMainWindow):
         self.meas_for_table = {}
         self.point = {}
 
-##        self.run_configurator()
+        self.run_configurator()
 
     def create_worker(self):
         '''
@@ -381,6 +381,7 @@ class MainWindow(QMainWindow):
         '''
         self.save_settings()
         self.timer.stop()
+        self.configurator_window.close()
         super().closeEvent(event)
 
     def save_settings(self):
@@ -407,28 +408,45 @@ class MainWindow(QMainWindow):
                 self.get_terms()
 
     def run_configurator(self):
-        ConfiguratorWindow(self).exec()
-                
+        self.configurator_window = ConfiguratorWindow(self)        
 
-class ConfiguratorWindow(QDialog):
+class ConfiguratorWindow(QDialog):        
     def __init__(self, parent=None):
         '''
-        
+        Creates dialog window to configure retrieving data.
         '''
         super().__init__(parent)
-
+        self.setModal(True)
         self.layout = QGridLayout()
         self.setWindowTitle('Конфигуратор')
 
         self.stations_layout = QVBoxLayout()
         self.stations_layout.addWidget(QLabel('Станции:'))
+        self.cb_idx = {}
         for row in get_json('stations.json'):
-            n = row['station_name']
-            self.stations_layout.addWidget(QCheckBox(n))
+            cb = QCheckBox(row['station_name'])
+            self.stations_layout.addWidget(cb)
         self.layout.addLayout(self.stations_layout, 0, 0)
 
+        self.measurings_layout = QGridLayout()
+        self.measurings_layout.addWidget(QLabel('Измерения:'), 0, 0, 1, 15)
+        i = 0
+        j = 0
+        for row in get_json('measurement.json'):
+            cb = QCheckBox(row['caption'])
+            i += 1
+            if i >= 20:
+                i = 1
+                j += 1
+            self.measurings_layout.addWidget(cb, i, j)            
+        self.layout.addLayout(self.measurings_layout, 0, 1)
+        
         self.setLayout(self.layout)
-        self.show()        
+        self.show()
+
+    def f(self, state):
+        isChecked = bool(state)
+        
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
