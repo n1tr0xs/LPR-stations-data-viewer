@@ -212,14 +212,10 @@ class MainWindow(QMainWindow):
 
     def get_stations(self):
         '''
-        Gets station list.
+        Gets station list from `settings.ini`.
         '''
         print('getting stations...')
-        self.stations = {}
-        for row in get_json('stations.json'):
-            index, name = row['sindex'], row['station_name']
-            if name.startswith('МС'):
-                self.stations[index] = name
+        self.stations = {i: n for i, n in config['Stations'].items()}
         print('stations received.')
 
     def get_terms(self):
@@ -314,7 +310,6 @@ class MainWindow(QMainWindow):
             for r in get_json('get', {'stations': station, 'streams': 0, 'point_at': self.point}):
                 _id = r['id']
                 bufr = r['code']
-                station = r['station']
                 value = r['value']
                 unit = r['unit']
                 prev = ready.get((bufr, station), None)
@@ -340,6 +335,7 @@ class MainWindow(QMainWindow):
         Updates values of `self.table` items.
         '''
         print('updating table values...')
+        print(self.meas_for_table)
         for i, bufr in enumerate(sorted(self.bufr_name)):
             for j, station in enumerate(sorted(self.stations)):
                 try:
