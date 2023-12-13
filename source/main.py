@@ -146,7 +146,7 @@ class MainWindow(QMainWindow):
         self.setCentralWidget(self.centralWidget)
 
         self.timer = QtCore.QTimer()
-        self.timer.setInterval(30*1000)
+        self.timer.setInterval(10*1000)
         self.timer.timeout.connect(self.create_worker)
 
         self.font = QtGui.QFont('Times New Roman', 12)
@@ -221,6 +221,7 @@ class MainWindow(QMainWindow):
         '''
         print('getting terms...')
         self.terms = set()
+        self.update()
         last_id = 0
         while (resp := get_json(
             'get',
@@ -383,8 +384,12 @@ class MainWindow(QMainWindow):
         Bindings in window.
         '''
         super().keyPressEvent(event)
-        if event.key() == QtCore.Qt.Key.Key_Escape:
-            self.close()
+        match event.key():
+            case QtCore.Qt.Key.Key_Escape:
+                self.close()
+            case QtCore.Qt.Key.Key_F5:
+                self.get_terms()
+                
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
