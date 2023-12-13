@@ -1,5 +1,5 @@
 @echo off
 cd dist\
-del "LPR stations data viewer.zip"
-7z a "LPR stations data viewer" -tzip
+del *.zip
+7z a %name% -tzip
 gh release create
