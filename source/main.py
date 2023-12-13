@@ -12,15 +12,17 @@ from PyQt6 import QtCore, QtGui
 from PyQt6.QtCore import Qt, pyqtSlot, QThreadPool, QObject, QRunnable, pyqtSignal
 from PyQt6.QtWidgets import *
 
+wanted_unit = config['Units']
+locale.setlocale(locale.LC_TIME, 'ru_RU.UTF-8')
 config = configparser.ConfigParser()
 config.read('settings.ini', encoding='UTF-8')
 
 convert_table = {
     'k': {
-      'C': lambda val: val - Decimal('273.15'),
+      'C': lambda x: x - Decimal('273.15'),
     },
     'pa': {
-        'гПа': lambda val: val / 100,
+        'гПа': lambda x: x / 100,
     },
     'code table': {
         'кодовая таблица': lambda x: x,
@@ -38,18 +40,6 @@ convert_table = {
         'м/с': lambda x: x,
     }
 }
-
-wanted_unit = {
-    'k': 'C',
-    'pa': 'гПа',
-    'code table': 'кодовая таблица',
-    'degree true': '°',
-    'kg m-2': 'мм',
-    'm': 'м',
-    'm/s': 'м/с',
-}
-
-locale.setlocale(locale.LC_TIME, 'ru_RU.UTF-8')
 
 def get_json(page: str, parameters: dict={}) -> list:
     '''
@@ -341,10 +331,9 @@ class MainWindow(QMainWindow):
                 try:
                     item = QTableWidgetItem(self.meas_for_table[bufr][station])
                 except KeyError:
-                    item = QTableWidgetItem('-'*3)
-                finally:
-                    item.setFlags(item.flags() & ~Qt.ItemFlag.ItemIsEditable)
-                    self.table.setItem(i, j, item)
+                    item = QTableWidgetItem('-'*3)                
+                item.setFlags(item.flags() & ~Qt.ItemFlag.ItemIsEditable)
+                self.table.setItem(i, j, item)
         print('table values updated.')
 
     def update_data(self):
