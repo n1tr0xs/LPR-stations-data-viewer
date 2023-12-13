@@ -3,7 +3,7 @@ import locale
 import configparser
 import datetime as dt
 from decimal import Decimal, ConversionSyntax, InvalidOperation
-from collections.abc import Iterable
+from collections.abc import KeysView
 from numbers import Number
 import traceback
 import requests
@@ -67,7 +67,10 @@ def get_json(page: str, parameters: dict={}) -> list:
     url = f'{server}/{page}?'
     for k, v in parameters.items():
         url += f'{k}='
-        url += ','.join(map(str, v)) if isinstance(v, Iterable) else str(v)
+        if isinstance(v, (tuple, set, list, KeysView)):
+            url += ','.join(map(str, v))
+        else:
+            url += str(v)
         url += '&'
     print(url)
     try:
