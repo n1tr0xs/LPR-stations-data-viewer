@@ -186,7 +186,6 @@ class MainWindow(QMainWindow):
         self.show()
 
         self.meas_for_table = {}
-        self.point = {}
 
     def create_worker(self):
         '''
@@ -292,9 +291,10 @@ class MainWindow(QMainWindow):
         print('getting measurements...')
         self.meas_for_table = {}
         ready = {}
+        point = self.terms[self.term_box.currentIndex()]
         for station, name in self.stations.items():
             print(station, name)
-            for r in get_json('get', {'stations': station, 'streams': 0, 'point_at': self.point}):
+            for r in get_json('get', {'stations': station, 'streams': 0, 'point_at': point}):
                 _id = r['id']
                 bufr = r['code']
                 value = r['value']
@@ -341,7 +341,6 @@ class MainWindow(QMainWindow):
         self.term_box.setEnabled(False)
         self.label_last_update.setText('Обновление, подождите...')
 
-        self.point = self.terms[self.term_box.currentIndex()]
         self.get_measurements()
         self.update_table_values()
 
