@@ -2,7 +2,7 @@ import sys
 import locale
 import configparser
 import datetime as dt
-from decimal import Decimal, ConversionSyntax, InvalidOperation
+from decimal import Decimal
 from collections.abc import KeysView
 from numbers import Number
 import traceback
@@ -306,10 +306,7 @@ class MainWindow(QMainWindow):
                 ready[(bufr, station)] = _id
                 if self.meas_for_table.get(bufr, None) is None:
                     self.meas_for_table[bufr] = {}
-                try:
-                    value = Decimal(value)
-                except (ConversionSyntax, InvalidOperation):
-                    value = '#'
+                value = Decimal(value)
                 match (wu:=wanted_unit.get(unit, unit)):
                     case 'C':
                         text = format_unit(value, unit, wu, prec=1)
