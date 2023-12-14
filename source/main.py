@@ -193,14 +193,13 @@ class MainWindow(QMainWindow):
         Creates and starts worker for info update.
         '''
         worker = Worker(self.update_data)
-        worker.signals.finished.connect(self.on_data_update)
         self.threadpool.start(worker)
 
     def on_data_update(self):
         '''
         Changes `self.label_last_update` text after data in table updated.
         '''
-        self.label_last_update.setText(f'Последнее обновление: {dt.datetime.now()}')
+        
 
     def get_stations(self):
         '''
@@ -337,13 +336,18 @@ class MainWindow(QMainWindow):
         '''
         print('updating data...')
         self.timer.stop()
+        self.term_box.setEnabled(False)
         self.label_last_update.setText('Обновление, подождите...')
+
         self.point = self.terms[self.term_box.currentIndex()]
         self.get_measurements()
         self.update_table_values()
         self.table.resizeColumnsToContents()
         self.table.resizeRowsToContents()
+
         self.timer.start(self.timer_interval)
+        self.term_box.setEnabled(True)
+        self.label_last_update.setText(f'Последнее обновление: {dt.datetime.now()}')
         print('data updated.')
 
     def closeEvent(self, event:QtGui.QCloseEvent):
