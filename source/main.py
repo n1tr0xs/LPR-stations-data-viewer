@@ -149,6 +149,7 @@ class MainWindow(QMainWindow):
         self.timer.timeout.connect(self.create_worker)
 
         self.font = QtGui.QFont('Times New Roman', 12)
+        self.table_header_font = QtGui.QFont('Times New Roman', 12, QtGui.QFont.Weight.Bold)
         self.setFont(self.font)
         self.setWindowTitle('Просмотр данных метеорологических станций ЛНР')
         self.setWindowIcon(QtGui.QIcon('icon.ico'))
@@ -266,8 +267,6 @@ class MainWindow(QMainWindow):
         Sets vertical header labels.
         '''
         print('setting headers...')
-        font = self.font
-        font.setBold(True)
         names = [
             f'{name}'
             for _, name in sorted(
@@ -277,14 +276,14 @@ class MainWindow(QMainWindow):
         ]
         self.table.setColumnCount(len(names))
         self.table.setHorizontalHeaderLabels(names)
-        self.table.horizontalHeader().setFont(font)
+        self.table.horizontalHeader().setFont(self.table_header_font)
         names = [
             f'{self.bufr_name[bufr]}, [{self.bufr_unit[bufr]}]'
             for bufr in sorted(self.bufr_name)
         ]
         self.table.setRowCount(len(names))
         self.table.setVerticalHeaderLabels(names)
-        self.table.verticalHeader().setFont(font)
+        self.table.verticalHeader().setFont(self.table_header_font)
         print('headers set.')
 
     def get_measurements(self):
