@@ -327,6 +327,8 @@ class MainWindow(QMainWindow):
                     item = QTableWidgetItem('-'*3)
                 item.setFlags(item.flags() & ~Qt.ItemFlag.ItemIsEditable)
                 self.table.setItem(i, j, item)
+        self.table.resizeColumnsToContents()
+        self.table.resizeRowsToContents()
         print('table values updated.')
 
     def update_data(self):
@@ -342,8 +344,6 @@ class MainWindow(QMainWindow):
         self.point = self.terms[self.term_box.currentIndex()]
         self.get_measurements()
         self.update_table_values()
-        self.table.resizeColumnsToContents()
-        self.table.resizeRowsToContents()
 
         self.timer.start(self.timer_interval)
         self.term_box.setEnabled(True)
