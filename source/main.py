@@ -277,16 +277,14 @@ class MainWindow(QMainWindow):
         ]
         self.table.setColumnCount(len(names))
         self.table.setHorizontalHeaderLabels(names)
-        for i in range(len(names)):
-            self.table.horizontalHeaderItem(i).setFont(font)
+        self.table.horizontalHeader().setFont(font)
         names = [
             f'{self.bufr_name[bufr]}, [{self.bufr_unit[bufr]}]'
             for bufr in sorted(self.bufr_name)
         ]
         self.table.setRowCount(len(names))
         self.table.setVerticalHeaderLabels(names)
-        for i in range(len(names)):
-            self.table.verticalHeaderItem(i).setFont(font)
+        self.table.verticalHeader().setFont(font)
         print('headers set.')
 
     def get_measurements(self):
