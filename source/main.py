@@ -136,7 +136,7 @@ class MainWindow(QMainWindow):
 
         self.settings = QtCore.QSettings('n1tr0xs', 'sinop measurement view')
         self.threadpool = QThreadPool.globalInstance()
-        
+
         self.layout = QGridLayout()
 
         self.centralWidget = QWidget()
