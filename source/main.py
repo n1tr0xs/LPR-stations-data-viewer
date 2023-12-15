@@ -178,6 +178,15 @@ class MainWindow(QMainWindow):
         self.table = QTableWidget()
         self.table.cellDoubleClicked.connect(lambda i, j: pyperclip.copy(self.table.item(i, j).text()))
         self.layout.addWidget(self.table, 1, 0, 1, 4)
+
+        menu = QMenu('Файл', self)
+
+        exit_act = QtGui.QAction('Выход', self)
+        exit_act.setStatusTip('Выход')
+        exit_act.triggered.connect(self.close)
+        menu.addAction(exit_act)
+        
+        self.menuBar().addMenu(menu)
         
         self.get_servers()
         self.get_stations()
@@ -189,6 +198,8 @@ class MainWindow(QMainWindow):
 
         self.restore_settings()
         self.show()        
+
+        self.run_configurator()
 
     def create_worker(self):
         '''
@@ -368,6 +379,7 @@ class MainWindow(QMainWindow):
         '''
         self.save_settings()
         self.timer.stop()
+        self.configurator_window.close()
         super().closeEvent(event)
 
     def save_settings(self):
@@ -392,7 +404,7 @@ class MainWindow(QMainWindow):
                 self.close()
             case QtCore.Qt.Key.Key_F5:
                 self.get_terms()
-
+           
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
