@@ -2,16 +2,16 @@ import sys
 import locale
 import configparser
 import datetime as dt
-from decimal import Decimal
+import traceback
 from collections.abc import KeysView
 from numbers import Number
-import traceback
+from decimal import Decimal
 import requests
 import pyperclip
 from PyQt6 import QtCore, QtGui
 from PyQt6.QtCore import Qt, pyqtSlot, QThreadPool, QObject, QRunnable, pyqtSignal
-from PyQt6.QtWidgets import *
-
+from PyQt6.QtWidgets import QMainWindow, QApplication, QGridLayout, QWidget, QPushButton, QLabel, QComboBox,\
+     QTableWidget, QMenu, QTableWidgetItem
 
 locale.setlocale(locale.LC_TIME, 'ru_RU.UTF-8')
 config = configparser.ConfigParser()
@@ -136,7 +136,7 @@ class MainWindow(QMainWindow):
         Creates main window.
         '''
         super().__init__()
-        
+
         self.settings = QtCore.QSettings('n1tr0xs', 'sinop measurement view')
         self.threadpool = QThreadPool.globalInstance()
         self.meas_for_table = {}
@@ -179,15 +179,16 @@ class MainWindow(QMainWindow):
         self.table.cellDoubleClicked.connect(lambda i, j: pyperclip.copy(self.table.item(i, j).text()))
         self.layout.addWidget(self.table, 1, 0, 1, 4)
 
+        # menu creation
         menu = QMenu('Файл', self)
 
         exit_act = QtGui.QAction('Выход', self)
         exit_act.setStatusTip('Выход')
         exit_act.triggered.connect(self.close)
         menu.addAction(exit_act)
-        
+
         self.menuBar().addMenu(menu)
-        
+
         self.get_servers()
         self.get_stations()
         self.get_measurements_types()
@@ -210,7 +211,7 @@ class MainWindow(QMainWindow):
         '''
         Gets list of servers from `settings.ini`.
         '''
-        print('getting servers...') 
+        print('getting servers...')
         self.servers = dict(config['сервера'])
         print(self.servers)
         print('servers received.')
@@ -236,6 +237,8 @@ class MainWindow(QMainWindow):
         '''
         print('getting terms...')
         self.terms = set()
+        self.term_box.clear()
+        self.term_box.setEnabled(False)
         for serv_name, serv_addr in self.servers.items():
             last_id = 0
             while (resp := get_json(
@@ -251,11 +254,11 @@ class MainWindow(QMainWindow):
                     moment = row['point_at']
                     last_id = row['id']
                     self.terms.add(moment)
-        self.term_box.clear()
         self.terms = sorted(filter(bool, self.terms), reverse=True)
         for term in self.terms:
             str_term = dt.datetime.utcfromtimestamp(term).strftime('%c')
             self.term_box.addItem(f'{str_term} UTC')
+        self.term_box.setEnabled(True)
         print('terms received.')
 
     def get_measurements_types(self):
@@ -280,6 +283,7 @@ class MainWindow(QMainWindow):
                 unit = wanted_unit.get(row['unit'], row['unit'])
                 self.bufr_name[bufr] = name
                 self.bufr_unit[bufr] = unit
+        print('measurements types received.')
 
     def set_headers(self):
         '''
@@ -287,18 +291,25 @@ class MainWindow(QMainWindow):
         Sets vertical header labels.
         '''
         print('setting headers...')
-        idx = sorted((i for v in self.serv_stations.values() for i in v), key=int)
-        names = [self.sidx_name[i] for i in idx]
+        names = [
+            self.sidx_name[i]
+            for i in sorted(
+                (i for v in self.serv_stations.values() for i in v),
+                key=int,
+        )]
         self.table.setColumnCount(len(names))
         self.table.setHorizontalHeaderLabels(names)
         self.table.horizontalHeader().setFont(self.table_header_font)
+        self.table.resizeColumnsToContents()
+        
         names = [
             f'{self.bufr_name[bufr]}, [{self.bufr_unit[bufr]}]'
             for bufr in sorted(self.bufr_name)
         ]
         self.table.setRowCount(len(names))
         self.table.setVerticalHeaderLabels(names)
-        self.table.verticalHeader().setFont(self.table_header_font)
+        self.table.verticalHeader().setFont(self.table_header_font)        
+        self.table.resizeRowsToContents()
         print('headers set.')
 
     def get_measurements(self):
@@ -306,7 +317,7 @@ class MainWindow(QMainWindow):
         Gets measurements.
         '''
         print('getting measurements...')
-        self.meas_for_table = {}
+        self.meas_for_table.clear()
         ready = {}
         point = self.terms[self.term_box.currentIndex()]
         for serv_name, serv_addr in self.servers.items():
@@ -319,18 +330,18 @@ class MainWindow(QMainWindow):
                     bufr = r['code']
                     value = r['value']
                     unit = r['unit']
-                    prev = ready.get((bufr, station), None)
-                    if (prev is not None) and (prev < _id):
+                    prev = ready.get((bufr, station), float('inf'))
+                    if prev < _id:
                         continue
                     ready[(bufr, station)] = _id
-                    if self.meas_for_table.get(bufr, None) is None:
-                        self.meas_for_table[bufr] = {}
                     value = Decimal(value)
                     match (wu:=wanted_unit.get(unit, unit)):
                         case 'C':
                             text = format_unit(value, unit, wu, prec=1)
                         case _:
                             text = format_unit(value, unit, wu)
+                    if self.meas_for_table.get(bufr, None) is None:
+                        self.meas_for_table[bufr] = {}
                     self.meas_for_table[bufr][station] = text
         print('measurements received.')
 
@@ -358,14 +369,17 @@ class MainWindow(QMainWindow):
         '''
         print('updating data...')
         self.timer.stop()
-        self.term_box.setEnabled(False)
+        widgets = (self.term_box, )
+        for widget in widgets:
+            widget.setEnabled(False)
         self.label_last_update.setText('Обновление, подождите...')
 
         self.get_measurements()
         self.update_table_values()
 
+        for widget in widgets:
+            widget.setEnabled(True)
         self.timer.start(self.timer_interval)
-        self.term_box.setEnabled(True)
         self.label_last_update.setText(f'Последнее обновление: {dt.datetime.now()}')
         print('data updated.')
 
@@ -401,10 +415,9 @@ class MainWindow(QMainWindow):
                 self.close()
             case QtCore.Qt.Key.Key_F5:
                 self.get_terms()
-           
+
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
     w = MainWindow()
     sys.exit(app.exec())
-    
