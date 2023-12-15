@@ -148,7 +148,7 @@ class MainWindow(QMainWindow):
         self.setCentralWidget(self.centralWidget)
 
         self.timer = QtCore.QTimer()
-        self.timer_interval = 10 * 1000
+        self.timer_interval = 60 * 1000
         self.timer.setInterval(self.timer_interval)
         self.timer.timeout.connect(self.create_worker)
 
@@ -197,9 +197,7 @@ class MainWindow(QMainWindow):
         self.timer.start(0)
 
         self.restore_settings()
-        self.show()        
-
-        self.run_configurator()
+        self.show()
 
     def create_worker(self):
         '''
@@ -379,7 +377,6 @@ class MainWindow(QMainWindow):
         '''
         self.save_settings()
         self.timer.stop()
-        self.configurator_window.close()
         super().closeEvent(event)
 
     def save_settings(self):
