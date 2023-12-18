@@ -1,4 +1,5 @@
 import sys
+import os
 import locale
 import configparser
 import datetime as dt
@@ -11,7 +12,9 @@ import pyperclip
 from PyQt6 import QtCore, QtGui
 from PyQt6.QtCore import Qt, pyqtSlot, QThreadPool, QObject, QRunnable, pyqtSignal
 from PyQt6.QtWidgets import QMainWindow, QApplication, QGridLayout, QWidget, QPushButton, QLabel, QComboBox,\
-     QTableWidget, QMenu, QTableWidgetItem
+     QTableWidget, QMenu, QTableWidgetItem, QDialog, QVBoxLayout
+
+VERSION = '2.1'
 
 locale.setlocale(locale.LC_TIME, 'ru_RU.UTF-8')
 config = configparser.ConfigParser()
@@ -67,7 +70,10 @@ def get_json(server: str, page: str, parameters: dict={}) -> list:
     print(url)
     try:
         return requests.get(url, timeout=5).json()
-    except (requests.exceptions.JSONDecodeError, requests.exceptions.ConnectionError) as e:
+    except (requests.exceptions.JSONDecodeError, ) as e:
+        print(e)
+        return []
+    except (requests.exceptions.ConnectionError, requests.exceptions.ReadTimeout) as e:
         print(e)
         return []
 
@@ -146,11 +152,7 @@ class MainWindow(QMainWindow):
         self.centralWidget = QWidget()
         self.centralWidget.setLayout(self.layout)
         self.setCentralWidget(self.centralWidget)
-
-        self.timer = QtCore.QTimer()
-        self.timer_interval = 60 * 1000
-        self.timer.setInterval(self.timer_interval)
-        self.timer.timeout.connect(self.create_worker)
+        self.timer_interval = 5 * 1000
 
         self.font = QtGui.QFont('Times New Roman', 12)
         self.table_header_font = QtGui.QFont('Times New Roman', 12, QtGui.QFont.Weight.Bold)
@@ -178,28 +180,43 @@ class MainWindow(QMainWindow):
         self.table = QTableWidget()
         self.table.cellDoubleClicked.connect(lambda i, j: pyperclip.copy(self.table.item(i, j).text()))
         self.layout.addWidget(self.table, 1, 0, 1, 4)
-
-        # menu creation
-        menu = QMenu('Файл', self)
-
-        exit_act = QtGui.QAction('Выход', self)
-        exit_act.setStatusTip('Выход')
-        exit_act.triggered.connect(self.close)
-        menu.addAction(exit_act)
-
-        self.menuBar().addMenu(menu)
-
+        
+        self.create_menu()
         self.get_servers()
         self.get_stations()
         self.get_measurements_types()
         self.set_headers()
         self.get_terms()
-        self.term_box.currentIndexChanged.connect(self.timer.timeout.emit)
-        self.timer.start(0)
+        self.term_box.currentIndexChanged.connect(self.create_worker)
+        QtCore.QTimer.singleShot(0, self.create_worker)
 
         self.restore_settings()
         self.show()
 
+    def create_menu(self):
+        # Меню "Файл"
+        file_menu = QMenu('Файл', self)
+        # Выход
+        exit_act = QtGui.QAction('Выход', self)
+        exit_act.setStatusTip('Выход')
+        exit_act.triggered.connect(self.close)
+        file_menu.addAction(exit_act)
+
+        # Меню "Помощь"
+        help_menu = QMenu('Помощь', self)
+        # О приложении
+        about_act = QtGui.QAction('О приложении', self)
+        about_act.setStatusTip('О приложении')
+        about_act.triggered.connect(self.show_help)
+        help_menu.addAction(about_act)
+        
+        self.menuBar().addMenu(file_menu)
+        self.menuBar().addMenu(help_menu)
+
+    def show_help(self):
+        try: HelpDialog(self).exec()
+        except Exception as e: print(e)
+        
     def create_worker(self):
         '''
         Creates and starts worker for info update.
@@ -319,7 +336,10 @@ class MainWindow(QMainWindow):
         print('getting measurements...')
         self.meas_for_table.clear()
         ready = {}
-        point = self.terms[self.term_box.currentIndex()]
+        try:
+            point = self.terms[self.term_box.currentIndex()]
+        except IndexError:
+            pass
         for serv_name, serv_addr in self.servers.items():
             print(serv_name, serv_addr)
             for station in self.serv_stations[serv_name]:
@@ -368,7 +388,6 @@ class MainWindow(QMainWindow):
         Updates info in `self.table`.
         '''
         print('updating data...')
-        self.timer.stop()
         widgets = (self.term_box, )
         for widget in widgets:
             widget.setEnabled(False)
@@ -379,7 +398,7 @@ class MainWindow(QMainWindow):
 
         for widget in widgets:
             widget.setEnabled(True)
-        self.timer.start(self.timer_interval)
+        QtCore.QTimer.singleShot(self.timer_interval, self.create_worker)
         self.label_last_update.setText(f'Последнее обновление: {dt.datetime.now()}')
         print('data updated.')
 
@@ -387,10 +406,8 @@ class MainWindow(QMainWindow):
         '''
         Overrides closeEvent.
         Saves window settings (geometry, position).
-        Stops the `self.timer`.
         '''
         self.save_settings()
-        self.timer.stop()
         super().closeEvent(event)
 
     def save_settings(self):
@@ -415,6 +432,27 @@ class MainWindow(QMainWindow):
                 self.close()
             case QtCore.Qt.Key.Key_F5:
                 self.get_terms()
+
+
+class HelpDialog(QDialog):
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.setWindowTitle('О приложении')
+        self.setModal(True)
+        self.layout = QVBoxLayout()
+
+        vers_label = QLabel(f'Версия приложения: {VERSION}')
+        self.layout.addWidget(vers_label)
+        
+        dev_label = QLabel('Разработчик: Никита "n1tr0xs" Троянов')
+        self.layout.addWidget(dev_label)
+
+        app_link = QPushButton('Скачать актуальную версию приложения')
+        app_link.clicked.connect(lambda x: os.system('start https://github.com/n1tr0xs/LPR-stations-data-viewer/releases/latest'))
+        self.layout.addWidget(app_link)
+                        
+        self.setLayout(self.layout)
+        self.show()
 
 
 if __name__ == "__main__":
