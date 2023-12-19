@@ -11,8 +11,9 @@ import requests
 import pyperclip
 from PyQt6 import QtCore, QtGui
 from PyQt6.QtCore import Qt, pyqtSlot, QThreadPool, QObject, QRunnable, pyqtSignal
-from PyQt6.QtWidgets import QMainWindow, QApplication, QGridLayout, QWidget, QPushButton, QLabel, QComboBox,\
-     QTableWidget, QMenu, QTableWidgetItem, QDialog, QVBoxLayout
+from PyQt6.QtWidgets import QMainWindow, QApplication, QGridLayout, QWidget, \
+     QPushButton, QLabel, QComboBox, QTableWidget, QMenu, QTableWidgetItem, \
+     QDialog, QVBoxLayout
 
 VERSION = '2.1'
 
@@ -47,7 +48,7 @@ convert_table = {
     }
 }
 
-def get_servers():
+def get_servers() -> dict:
     '''
     Gets list of servers from `settings.ini`.
     '''
@@ -57,7 +58,10 @@ def get_servers():
     print('servers received.')
     return servers
 
-def get_terms(serv_stations):
+def get_terms() -> set:
+    '''
+    Gets list of available terms.
+    '''
     print('getting terms...')
     terms = set()
     for serv_name, serv_addr in SERVERS.items():
@@ -67,7 +71,7 @@ def get_terms(serv_stations):
             'get',
             {
                 'streams': 0,
-                'stations': serv_stations[serv_name],
+                'stations': server_stations[serv_name],
                 'lastid': last_id
             }
         )):
@@ -78,7 +82,7 @@ def get_terms(serv_stations):
     print('terms received...')
     return terms
 
-def get_stations():
+def get_stations() -> tuple[dict, dict]:
     '''
     Gets station list from `settings.ini`.
     '''
@@ -94,28 +98,32 @@ def get_stations():
     print('stations received.')
     return (serv_stations, sidx_name)
 
-def get_measurements(point):
+def get_measurements(point: int) -> dict:
     '''
     Gets measurements.
     '''
+    print(type(point))
     print('getting measurements...')
     meas_for_table = {}
     ready = {}
     for serv_name, serv_addr in SERVERS.items():
         print(serv_name, serv_addr)
-        for station in serv_stations[serv_name]:
-            name = sidx_name[station]
-            print(station, name)
-            for r in get_json(serv_addr, 'get', {'stations': station, 'streams': 0, 'point_at': point}):
+        for station in server_stations[serv_name]:
+            print(station, sindex_sname[station])
+            resp = get_json(
+                serv_addr,
+                'get',
+                {'stations': station, 'streams': 0, 'point_at': point}
+            )
+            for r in resp:
                 _id = r['id']
                 bufr = r['code']
-                value = r['value']
                 unit = r['unit']
                 prev = ready.get((bufr, station), float('inf'))
                 if prev < _id:
                     continue
                 ready[(bufr, station)] = _id
-                value = Decimal(value)
+                value = Decimal(r['value'])
                 match (wu:=wanted_unit.get(unit, unit)):
                     case 'C':
                         text = format_unit(value, unit, wu, prec=1)
@@ -126,9 +134,6 @@ def get_measurements(point):
                 meas_for_table[bufr][station] = text
     print('measurements received.')
     return meas_for_table
-
-SERVERS = get_servers()
-serv_stations, sidx_name = get_stations()
 
 def get_json(server: str, page: str, parameters: dict={}) -> list:
     '''
@@ -227,9 +232,8 @@ class MainWindow(QMainWindow):
         super().__init__()
 
         self.timer_interval = 30 * 1000
-        
+
         self.settings = QtCore.QSettings('n1tr0xs', 'Stations measurement views')
-        self.threadpool = QThreadPool.globalInstance()
 
         self.layout = QGridLayout()
         self.centralWidget = QWidget()
@@ -238,7 +242,7 @@ class MainWindow(QMainWindow):
 
         self.restore_settings()
         self.show()
-        
+
         self.font = QtGui.QFont('Times New Roman', 12)
         self.table_header_font = QtGui.QFont('Times New Roman', 12, QtGui.QFont.Weight.Bold)
         self.setFont(self.font)
@@ -263,9 +267,11 @@ class MainWindow(QMainWindow):
         self.layout.addWidget(self.label_last_update, 0, 3)
 
         self.table = QTableWidget()
-        self.table.cellDoubleClicked.connect(lambda i, j: pyperclip.copy(self.table.item(i, j).text()))
+        self.table.cellDoubleClicked.connect(
+            lambda i, j: pyperclip.copy(self.table.item(i, j).text())
+        )
         self.layout.addWidget(self.table, 1, 0, 1, 4)
-        
+
         self.create_menu()
         self.get_measurements_types()
         self.set_headers()
@@ -274,6 +280,9 @@ class MainWindow(QMainWindow):
         QtCore.QTimer.singleShot(0, self.create_worker)
 
     def create_menu(self):
+        '''
+        Creates menu.
+        '''
         # Меню "Файл"
         file_menu = QMenu('Файл', self)
         # Выход
@@ -289,26 +298,34 @@ class MainWindow(QMainWindow):
         about_act.setStatusTip('О приложении')
         about_act.triggered.connect(self.show_help)
         help_menu.addAction(about_act)
-        
+
         self.menuBar().addMenu(file_menu)
         self.menuBar().addMenu(help_menu)
 
     def show_help(self):
-        try: HelpDialog(self).exec()
-        except Exception as e: print(e)
-        
+        '''
+        Shows Help window.
+        '''
+        try:
+            HelpDialog(self).exec()
+        except Exception as e:
+            print(e)
+
     def create_worker(self):
         '''
         Creates and starts worker for info update.
         '''
         worker = Worker(self.update_data)
-        self.threadpool.start(worker)
+        QThreadPool.globalInstance().start(worker)
 
     def set_terms(self):
+        '''
+        Setting list of terms for `self.term_box`.
+        '''
         print('setting terms...')
         self.term_box.clear()
         self.term_box.setEnabled(False)
-        self.terms = sorted(filter(bool, get_terms(serv_stations)), reverse=True)
+        self.terms = sorted(filter(bool, get_terms()), reverse=True)
         for term in self.terms:
             str_term = dt.datetime.utcfromtimestamp(term).strftime('%c')
             self.term_box.addItem(f'{str_term} UTC')
@@ -324,7 +341,7 @@ class MainWindow(QMainWindow):
         self.bufr_name = {}
         self.bufr_unit = {}
         bufrs = set()
-        for serv_name, stations in serv_stations.items():
+        for serv_name, stations in server_stations.items():
             serv_addr = SERVERS[serv_name]
             for station in stations:
                 for row in get_json(serv_addr, 'station_taking.json', {'station': station}):
@@ -333,10 +350,8 @@ class MainWindow(QMainWindow):
                 bufr = row['bufrcode']
                 if bufr not in bufrs:
                     continue
-                name = row['caption']
-                unit = wanted_unit.get(row['unit'], row['unit'])
-                self.bufr_name[bufr] = name
-                self.bufr_unit[bufr] = unit
+                self.bufr_name[bufr] = row['caption']
+                self.bufr_unit[bufr] = wanted_unit.get(row['unit'], row['unit'])
         print('measurements types received.')
 
     def set_headers(self):
@@ -346,9 +361,9 @@ class MainWindow(QMainWindow):
         '''
         print('setting headers...')
         names = [
-            sidx_name[i]
+            sindex_sname[i]
             for i in sorted(
-                (i for v in serv_stations.values() for i in v),
+                (i for v in server_stations.values() for i in v),
                 key=int,
         )]
         self.table.setColumnCount(len(names))
@@ -362,7 +377,7 @@ class MainWindow(QMainWindow):
         ]
         self.table.setRowCount(len(names))
         self.table.setVerticalHeaderLabels(names)
-        self.table.verticalHeader().setFont(self.table_header_font)        
+        self.table.verticalHeader().setFont(self.table_header_font)
         self.table.resizeRowsToContents()
         print('headers set.')
 
@@ -372,7 +387,7 @@ class MainWindow(QMainWindow):
         '''
         print('updating table values...')
         for i, bufr in enumerate(sorted(self.bufr_name)):
-            for j, station in enumerate(sorted(sidx_name)):
+            for j, station in enumerate(sorted(sindex_sname)):
                 try:
                     item = QTableWidgetItem(meas_for_table[bufr][station])
                 except KeyError:
@@ -446,19 +461,22 @@ class HelpDialog(QDialog):
 
         vers_label = QLabel(f'Версия приложения: {VERSION}')
         self.layout.addWidget(vers_label)
-        
+
         dev_label = QLabel('Разработчик: Никита "n1tr0xs" Троянов')
         self.layout.addWidget(dev_label)
 
         app_link = QPushButton('Скачать актуальную версию приложения')
-        app_link.clicked.connect(lambda x: os.system('start https://github.com/n1tr0xs/LPR-stations-data-viewer/releases/latest'))
+        link = 'https://github.com/n1tr0xs/LPR-stations-data-viewer/releases/latest'
+        app_link.clicked.connect(lambda x: os.system(f'start {link}'))
         self.layout.addWidget(app_link)
-                        
+
         self.setLayout(self.layout)
         self.show()
 
 
 if __name__ == "__main__":
+    SERVERS = get_servers()
+    server_stations, sindex_sname = get_stations()
     app = QApplication(sys.argv)
     w = MainWindow()
     sys.exit(app.exec())
