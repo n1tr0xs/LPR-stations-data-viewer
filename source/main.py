@@ -231,7 +231,7 @@ class MainWindow(QMainWindow):
         '''
         super().__init__()
 
-        self.timer_interval = 30 * 1000
+        self.timer_interval = config['настройки'].getint('период', 15) * 1000
 
         self.settings = QtCore.QSettings('n1tr0xs', 'Stations measurement views')
 
