@@ -277,6 +277,7 @@ class MainWindow(QMainWindow):
         self.set_headers()
         self.set_terms()
         self.term_box.currentIndexChanged.connect(self.create_worker)
+        self.term_box.activated.connect(lambda x: print(self.term_box.activated))
         QtCore.QTimer.singleShot(0, self.create_worker)
 
     def create_menu(self):
@@ -315,6 +316,7 @@ class MainWindow(QMainWindow):
         '''
         Creates and starts worker for info update.
         '''
+        print(self.term_box.currentIndex())
         worker = Worker(self.update_data)
         QThreadPool.globalInstance().start(worker)
 
@@ -404,9 +406,6 @@ class MainWindow(QMainWindow):
         Updates info in `self.table`.
         '''
         print('updating data...')
-        widgets = (self.term_box, )
-        for widget in widgets:
-            widget.setEnabled(False)
         self.label_last_update.setText('Обновление, подождите...')
 
         try:
@@ -414,8 +413,6 @@ class MainWindow(QMainWindow):
         except IndexError:
             return
 
-        for widget in widgets:
-            widget.setEnabled(True)
         QtCore.QTimer.singleShot(self.timer_interval, self.create_worker)
         self.label_last_update.setText(f'Последнее обновление: {dt.datetime.now()}')
         print('data updated.')
