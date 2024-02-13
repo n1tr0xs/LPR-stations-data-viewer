@@ -6,7 +6,7 @@ import datetime as dt
 import traceback
 from collections.abc import KeysView
 from numbers import Number
-from decimal import Decimal
+from decimal import Decimal, ConversionSyntax, InvalidOperation, 1
 import requests
 import pyperclip
 from PyQt6 import QtCore, QtGui
@@ -15,7 +15,7 @@ from PyQt6.QtWidgets import QMainWindow, QApplication, QGridLayout, QWidget, \
      QPushButton, QLabel, QComboBox, QTableWidget, QMenu, QTableWidgetItem, \
      QDialog, QVBoxLayout
 
-VERSION = '2.1'
+VERSION = '2.1b'
 
 locale.setlocale(locale.LC_TIME, 'ru_RU.UTF-8')
 config = configparser.ConfigParser()
@@ -66,15 +66,18 @@ def get_terms() -> set:
     terms = set()
     for serv_name, serv_addr in SERVERS.items():
         last_id = 0
-        while (resp := get_json(
-            serv_addr,
-            'get',
-            {
-                'streams': 0,
-                'stations': server_stations[serv_name],
-                'lastid': last_id
-            }
-        )):
+        while True:
+            resp = get_json(
+                serv_addr,
+                'get',
+                {
+                    'streams': 0,
+                    'stations': server_stations[serv_name],
+                    'lastid': last_id,
+                }
+            )
+            if not resp:
+                break
             for row in resp:
                 moment = row['point_at']
                 last_id = row['id']
@@ -102,7 +105,6 @@ def get_measurements(point: int) -> dict:
     '''
     Gets measurements.
     '''
-    print(type(point))
     print('getting measurements...')
     meas_for_table = {}
     ready = {}
@@ -123,7 +125,11 @@ def get_measurements(point: int) -> dict:
                 if prev < _id:
                     continue
                 ready[(bufr, station)] = _id
-                value = Decimal(r['value'])
+                try:
+                    value = Decimal(r['value'])
+                except (ConversionSyntax, InvalidOperation):
+                    print('invalid:', r['value'])
+                    value = '---'
                 match (wu:=wanted_unit.get(unit, unit)):
                     case 'C':
                         text = format_unit(value, unit, wu, prec=1)
@@ -140,6 +146,8 @@ def get_json(server: str, page: str, parameters: dict={}) -> list:
     Gets json from `server` using given `page` with given `parameters`.
     Returns list.
 
+    :param server: The server address.
+    :type server: string
     :param page: The rest api page on server.
     :type page: string
     :param parameters: GET parameters for rest api page.
@@ -158,11 +166,12 @@ def get_json(server: str, page: str, parameters: dict={}) -> list:
     print(url)
     try:
         return requests.get(url, timeout=1).json()
-    except (requests.exceptions.JSONDecodeError, ) as e:
-        print(e)
-        return []
-    except (requests.exceptions.ConnectionError, requests.exceptions.ReadTimeout) as e:
-        print(e)
+    except (
+        requests.exceptions.JSONDecodeError,
+        requests.exceptions.ConnectionError,
+        requests.exceptions.ReadTimeout
+    ) as e:
+        print(type(e), e)
         return []
 
 def format_unit(value: Number, base: str, target: str, prec=None, table: dict=convert_table) -> str:
@@ -231,7 +240,8 @@ class MainWindow(QMainWindow):
         '''
         super().__init__()
 
-        self.timer_interval = config['настройки'].getint('период', 15) * 1000
+        self.timer_interval = config['настройки'].getint('период', 30) * 1000
+        print(f'Timer interval set to: {self.timer_interval}')
 
         self.settings = QtCore.QSettings('n1tr0xs', 'Stations measurement views')
 
@@ -277,7 +287,6 @@ class MainWindow(QMainWindow):
         self.set_headers()
         self.set_terms()
         self.term_box.currentIndexChanged.connect(self.create_worker)
-        self.term_box.activated.connect(lambda x: print(self.term_box.activated))
         QtCore.QTimer.singleShot(0, self.create_worker)
 
     def create_menu(self):
@@ -310,13 +319,13 @@ class MainWindow(QMainWindow):
         try:
             HelpDialog(self).exec()
         except Exception as e:
-            print(e)
+            print(type(e), e)
 
     def create_worker(self):
         '''
         Creates and starts worker for info update.
         '''
-        print(self.term_box.currentIndex())
+        print('selected term №:', self.term_box.currentIndex())
         worker = Worker(self.update_data)
         QThreadPool.globalInstance().start(worker)
 
