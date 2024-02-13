@@ -6,7 +6,7 @@ import datetime as dt
 import traceback
 from collections.abc import KeysView
 from numbers import Number
-from decimal import Decimal, ConversionSyntax, InvalidOperation, 1
+from decimal import Decimal, ConversionSyntax, InvalidOperation
 import requests
 import pyperclip
 from PyQt6 import QtCore, QtGui
