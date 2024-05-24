@@ -23,5 +23,12 @@
 В этом блоке указываются дополнительные настройки программы.
 *период - периодичность обновления данных (не рекомендуется ставить меньше 15 секунд).
 
+---
+Сборка исходного кода с использованием `pyinstaller`:
+```
+pip install -r requirements.txt
+pyinstaller --noconfirm --clean --log-level FATAL --onedir --name %name% --contents-directory "." --noconsole --icon "icon.ico" --add-data "icon.ico";"." --add-data "settings.ini";"." "main.py"
+```
+
 
 
