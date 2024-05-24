@@ -27,8 +27,7 @@
 Сборка исходного когда (необходимы `Python >=3.11`, `pyinstaller`):
 ```
 python -m pip install --upgrade pip
-pip install -r requirements.txt
-pip install pyinstaller
+pip install -r requirements.txt pyinstaller
 pyinstaller --noconfirm --clean --log-level FATAL --onedir --name "LPR stations data viewer" --contents-directory "." --noconsole --icon "icon.ico" --add-data "icon.ico";"." --add-data "settings.ini";"." "main.py"
 ```
 
