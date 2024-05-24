@@ -8,6 +8,8 @@ jobs:
       matrix:
         python-version: ["3.11"]
     steps:
+    - name: LS files
+      run: echo git ls-files
     - uses: actions/checkout@v4
     - name: Set up Python ${{ matrix.python-version }}
       uses: actions/setup-python@v5
