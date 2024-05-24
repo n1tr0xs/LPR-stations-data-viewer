@@ -28,8 +28,8 @@ k = C
 6. Блок настроек.  
 В этом блоке указываются дополнительные настройки программы:
     * период - периодичность запросов на сервер.
----
-Сборка исходного когда (необходимы `Python >=3.11`, `pyinstaller`):
+
+## Сборка исходного когда (необходимы `Python >=3.11`, `pyinstaller`):
 ```Batchfile
 python -m pip install --upgrade pip
 pip install -r requirements.txt pyinstaller
