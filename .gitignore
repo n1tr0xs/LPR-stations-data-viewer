@@ -163,3 +163,9 @@ cython_debug/
 **/build
 **/dist
 **/*.spec
+
+# Python venv
+Scripts/
+Lib/
+Include/
+pyvenv.cfg
