@@ -3,14 +3,14 @@ name: Pylint
 on: [push]
 jobs:
   build:
-    runs-on: windows-latest
+    runs-on: ubuntu-latest
     strategy:
       matrix:
         python-version: ["3.11"]
     steps:
     - name: LS files
       run: |
-        dir ${{ github.workspace }} /S
+        ls ${{ github.workspace }}
     - uses: actions/checkout@v4
     - name: Set up Python ${{ matrix.python-version }}
       uses: actions/setup-python@v5
