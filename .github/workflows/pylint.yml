@@ -9,7 +9,7 @@ jobs:
         python-version: ["3.11"]
     steps:
     - name: LS files
-      run: dir ${{ github.workspace }}
+      run: dir ${{ github.workspace }} /S
     - uses: actions/checkout@v4
     - name: Set up Python ${{ matrix.python-version }}
       uses: actions/setup-python@v5
