@@ -24,9 +24,18 @@
 *период - периодичность обновления данных (не рекомендуется ставить меньше 15 секунд).
 
 ---
-Сборка исходного кода с использованием `pyinstaller`:
+Сборка исходного когда (необходимы `Python >=3.11`, `pyinstaller`):
+1. Обновление pip
+```
+python.exe -m pip install --upgrade pip
+```
+2. Установка зависимостей
 ```
 pip install -r requirements.txt
+pip install pyinstaller
+```
+3. Сборка приложения
+```
 pyinstaller --noconfirm --clean --log-level FATAL --onedir --name "LPR stations data viewer" --contents-directory "." --noconsole --icon "icon.ico" --add-data "icon.ico";"." --add-data "settings.ini";"." "main.py"
 ```
 
