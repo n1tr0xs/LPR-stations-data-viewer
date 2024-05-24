@@ -27,7 +27,7 @@
 Сборка исходного кода с использованием `pyinstaller`:
 ```
 pip install -r requirements.txt
-pyinstaller --noconfirm --clean --log-level FATAL --onedir --name %name% --contents-directory "." --noconsole --icon "icon.ico" --add-data "icon.ico";"." --add-data "settings.ini";"." "main.py"
+pyinstaller --noconfirm --clean --log-level FATAL --onedir --name "LPR stations data viewer" --contents-directory "." --noconsole --icon "icon.ico" --add-data "icon.ico";"." --add-data "settings.ini";"." "main.py"
 ```
 
 
