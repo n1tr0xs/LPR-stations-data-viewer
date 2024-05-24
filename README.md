@@ -27,12 +27,12 @@
 Сборка исходного когда (необходимы `Python >=3.11`, `pyinstaller`):
 ```
 REM Обновление pip
-python -m pip install --upgrade pip
+@python -m pip install --upgrade pip
 REM Установка зависимостей
-pip install -r requirements.txt
-pip install pyinstaller
+@pip install -r requirements.txt
+@pip install pyinstaller
 REM Сборка приложения
-pyinstaller --noconfirm --clean --log-level FATAL --onedir --name "LPR stations data viewer" --contents-directory "." --noconsole --icon "icon.ico" --add-data "icon.ico";"." --add-data "settings.ini";"." "main.py"
+@pyinstaller --noconfirm --clean --log-level FATAL --onedir --name "LPR stations data viewer" --contents-directory "." --noconsole --icon "icon.ico" --add-data "icon.ico";"." --add-data "settings.ini";"." "main.py"
 ```
 
 
