@@ -22,4 +22,4 @@ jobs:
         pip install pylint
     - name: Analysing the code with pylint
       run: |
-        pylint -E --extension-pkg-whitelist PyQt6 --disable used-before-assignment --good-names centralWidget,closeEvent,keyPressEvent \source\main.py
+        pylint -E --extension-pkg-whitelist PyQt6 --disable used-before-assignment --good-names centralWidget,closeEvent,keyPressEvent ${{ github.workspace }}/source/main.py
