@@ -20,4 +20,4 @@ jobs:
         pip install -r ${{ github.workspace }}/source/requirements.txt
     - name: Analysing the code with pylint
       run: |
-        pylint -E --extension-pkg-whitelist PyQt6 --disable used-before-assignment --good-names centralWidget,closeEvent,keyPressEvent ${{ github.workspace }}/source/main.py
+        pylint --extension-pkg-whitelist PyQt6 --disable used-before-assignment --good-names centralWidget,closeEvent,keyPressEvent -E ${{ github.workspace }}/source/main.py
