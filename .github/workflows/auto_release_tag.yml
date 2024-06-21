@@ -1,0 +1,49 @@
+name: Build and Release tag
+
+on:
+  push:
+    tags:
+      - v*
+
+permissions:
+  contents: write
+
+env:  
+  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  GITHUB_REPOSITORY: ${{ github.repository }}
+  tag: ${{ github.ref_name }}
+      
+jobs:
+  pyinstaller-build:
+    name: Build an app
+    runs-on: windows-latest
+    steps:
+      - uses: sayyid5416/pyinstaller@v1
+        with:
+          python_ver: '3.10'
+          spec: 'src/build.spec'
+          upload_exe_with_name: App
+          
+  release:    
+    name: Create release
+    runs-on: ubuntu-22.04
+    needs: pyinstaller-build
+    steps:
+      - name: Download builded app
+        uses: actions/download-artifact@v4
+        with:
+          name: App
+          path: .
+      - name: Create release
+        run: |
+          gh release create "${tag}" \
+              --repo="${GITHUB_REPOSITORY}" \
+              --title="${GITHUB_REPOSITORY#*/} ${tag}" \
+              --generate-notes
+      - name: Archive builded app
+        run: |
+          zip -r "${GITHUB_REPOSITORY#*/}.zip" App
+      - name: Upload asset
+        run: |
+          gh release upload "${tag}" "${GITHUB_REPOSITORY#*/}.zip" \
+          --repo="${GITHUB_REPOSITORY}" \
