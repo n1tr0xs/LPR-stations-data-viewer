@@ -36,7 +36,7 @@ jobs:
           pycodestyle . --ignore E501,E722
       - name: Build an app
         run: |
-          pyinstaller --noconfirm --clean --log-level FATAL --onedir --name "${BUILD_APP_NAME}" --contents-directory "." --noconsole --icon "icon.ico" --add-data "icon.ico";"." --add-data "settings.ini";"." "main.py"
+          pyinstaller --noconfirm --clean --log-level FATAL --onedir --name "${BUILD_APP_NAME}" --contents-directory "." --noconsole "main.py"
           
   release:    
     name: Create release
