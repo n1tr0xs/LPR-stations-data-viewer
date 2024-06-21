@@ -41,6 +41,7 @@ jobs:
         uses: actions/upload-artifact@v4.3.3
         with:
           name: App
+          path: "dist/LPR stations data viewer"
 
         
   release:    
