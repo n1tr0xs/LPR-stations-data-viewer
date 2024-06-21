@@ -15,28 +15,25 @@ env:
   BUILD_APP_NAME: 'LPR stations data viewer'
       
 jobs:
-  pep8check:
-    name: PEP8 check
+  pyinstaller-build:
+    name: Build app
     runs-on: windows-latest
     steps:
-      - name: Install pyinstaller
+      - name: Upgrade pip
         run: |
-          pip install pycodestyle
-      - name: Run check
+          py -m pip install --upgrade pip
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt pyinstaller pycodestyle
+      - name: PEP8 check
         run: |
           pycodestyle . --ignore E501,E722
-
-  pyinstaller-build:
-    name: Build an app
-    runs-on: windows-latest
-    needs: pep8check
-    steps:
-      - uses: sayyid5416/pyinstaller@v1
-        with:
-          python_ver: '3.10'
-          spec: 'build.spec'
-          upload_exe_with_name: App
-          requirements: 'requirements.txt'
+      - name: Build an app
+        run: |
+          pyinstaller --noconfirm --clean --log-level FATAL --onedir \
+          --name "${BUILD_APP_NAME}" --contents-directory "." \
+          --noconsole --icon "icon.ico" --add-data "icon.ico";"." \
+          --add-data "settings.ini";"." "main.py"
           
   release:    
     name: Create release
