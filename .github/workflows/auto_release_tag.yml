@@ -33,7 +33,7 @@ jobs:
       - uses: sayyid5416/pyinstaller@v1
         with:
           python_ver: '3.10'
-          spec: 'src/build.spec'
+          spec: 'build.spec'
           upload_exe_with_name: App
           
   release:    
