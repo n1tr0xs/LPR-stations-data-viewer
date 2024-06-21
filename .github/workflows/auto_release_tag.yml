@@ -19,6 +19,9 @@ jobs:
     name: Build app
     runs-on: windows-latest
     steps:
+      - name: DIR
+        run: |
+          dir /S
       - name: Upgrade pip
         run: |
           py -m pip install --upgrade pip
