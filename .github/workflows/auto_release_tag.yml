@@ -21,7 +21,7 @@ jobs:
     steps:
       - name: DIR
         run: |
-          dir D:\ /S
+          dir D:\
       - name: Upgrade pip
         run: |
           py -m pip install --upgrade pip
