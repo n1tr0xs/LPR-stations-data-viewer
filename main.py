@@ -10,10 +10,15 @@ from decimal import Decimal, ConversionSyntax, InvalidOperation
 import requests
 import pyperclip
 from PyQt6 import QtCore, QtGui
-from PyQt6.QtCore import Qt, pyqtSlot, QThreadPool, QObject, QRunnable, pyqtSignal
-from PyQt6.QtWidgets import QMainWindow, QApplication, QGridLayout, QWidget, \
-     QPushButton, QLabel, QComboBox, QTableWidget, QMenu, QTableWidgetItem, \
-     QDialog, QVBoxLayout
+from PyQt6.QtCore import (
+    Qt, pyqtSlot, QThreadPool,
+    QObject, QRunnable, pyqtSignal
+)
+from PyQt6.QtWidgets import (
+    QMainWindow, QApplication, QGridLayout, QWidget,
+    QPushButton, QLabel, QComboBox, QTableWidget,
+    QMenu, QTableWidgetItem, QDialog, QVBoxLayout
+)
 
 VERSION = '2.1b'
 
@@ -23,7 +28,7 @@ config.read('settings.ini', encoding='UTF-8')
 wanted_unit = config['единицы']
 convert_table = {
     'k': {
-      'C': lambda x: x - Decimal('273.15'),
+        'C': lambda x: x - Decimal('273.15'),
     },
     'pa': {
         'гПа': lambda x: x / 100,
@@ -48,6 +53,7 @@ convert_table = {
     }
 }
 
+
 def get_servers() -> dict:
     '''
     Gets list of servers from `settings.ini`.
@@ -57,6 +63,7 @@ def get_servers() -> dict:
     print(servers)
     print('servers received.')
     return servers
+
 
 def get_terms() -> set:
     '''
@@ -85,6 +92,7 @@ def get_terms() -> set:
     print('terms received...')
     return terms
 
+
 def get_stations() -> tuple[dict, dict]:
     '''
     Gets station list from `settings.ini`.
@@ -100,6 +108,7 @@ def get_stations() -> tuple[dict, dict]:
     print(sidx_name)
     print('stations received.')
     return (serv_stations, sidx_name)
+
 
 def get_measurements(point: int) -> dict:
     '''
@@ -130,7 +139,7 @@ def get_measurements(point: int) -> dict:
                 except (ConversionSyntax, InvalidOperation):
                     print('invalid:', r['value'])
                     value = '---'
-                match (wu:=wanted_unit.get(unit, unit)):
+                match (wu := wanted_unit.get(unit, unit)):
                     case 'C':
                         text = format_unit(value, unit, wu, prec=1)
                     case _:
@@ -141,7 +150,8 @@ def get_measurements(point: int) -> dict:
     print('measurements received.')
     return meas_for_table
 
-def get_json(server: str, page: str, parameters: dict={}) -> list:
+
+def get_json(server: str, page: str, parameters: dict = {}) -> list:
     '''
     Gets json from `server` using given `page` with given `parameters`.
     Returns list.
@@ -174,7 +184,8 @@ def get_json(server: str, page: str, parameters: dict={}) -> list:
         print(type(e), e)
         return []
 
-def format_unit(value: Number, base: str, target: str, prec=None, table: dict=convert_table) -> str:
+
+def format_unit(value: Number, base: str, target: str, prec=None, table: dict = convert_table) -> str:
     '''
     Converts given value from unit to unit.
     Formats the result to string `value unit`.
@@ -187,6 +198,7 @@ def format_unit(value: Number, base: str, target: str, prec=None, table: dict=co
         return f'{round(res, prec)}'
     return f'{res}'
 
+
 class WorkerSignals(QObject):
     '''
     Defines the signals available from a running worker thread.
@@ -195,6 +207,7 @@ class WorkerSignals(QObject):
     finished = pyqtSignal()
     error = pyqtSignal(tuple)
     result = pyqtSignal()
+
 
 class Worker(QRunnable):
     '''
@@ -231,6 +244,7 @@ class Worker(QRunnable):
         finally:
             self.signals.finished.emit()
 
+
 class MainWindow(QMainWindow):
     keyPressed = pyqtSignal(int)
 
@@ -264,7 +278,7 @@ class MainWindow(QMainWindow):
         self.layout.addWidget(self.update_terms_btn)
 
         self.label_term = QLabel('Срок:')
-        self.label_term.setAlignment(Qt.AlignmentFlag.AlignRight|Qt.AlignmentFlag.AlignVCenter)
+        self.label_term.setAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
         self.layout.addWidget(self.label_term, 0, 1)
 
         self.term_box = QComboBox()
@@ -376,7 +390,8 @@ class MainWindow(QMainWindow):
             for i in sorted(
                 (i for v in server_stations.values() for i in v),
                 key=int,
-        )]
+            )
+        ]
         self.table.setColumnCount(len(names))
         self.table.setHorizontalHeaderLabels(names)
         self.table.horizontalHeader().setFont(self.table_header_font)
@@ -402,7 +417,7 @@ class MainWindow(QMainWindow):
                 try:
                     item = QTableWidgetItem(meas_for_table[bufr][station])
                 except KeyError:
-                    item = QTableWidgetItem('-'*3)
+                    item = QTableWidgetItem('---')
                 item.setFlags(item.flags() & ~Qt.ItemFlag.ItemIsEditable)
                 self.table.setItem(i, j, item)
         self.table.resizeColumnsToContents()
@@ -426,7 +441,7 @@ class MainWindow(QMainWindow):
         self.label_last_update.setText(f'Последнее обновление: {dt.datetime.now()}')
         print('data updated.')
 
-    def closeEvent(self, event:QtGui.QCloseEvent):
+    def closeEvent(self, event: QtGui.QCloseEvent):
         '''
         Overrides closeEvent.
         Saves window settings (geometry, position).
@@ -444,7 +459,8 @@ class MainWindow(QMainWindow):
         '''
         Restores last window geometry.
         '''
-        self.restoreGeometry(self.settings.value("geometry", type=QtCore.QByteArray))
+        geometry = self.settings.value("geometry", type=QtCore.QByteArray)
+        self.restoreGeometry(geometry)
 
     def keyPressEvent(self, event):
         '''

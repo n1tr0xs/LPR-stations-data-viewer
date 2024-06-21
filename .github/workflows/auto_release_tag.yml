@@ -14,9 +14,21 @@ env:
   tag: ${{ github.ref_name }}
       
 jobs:
+  pep8check:
+    name: PEP8 check
+    runs-on: windows-latest
+    steps:
+      - name: Install pyinstaller
+        run: |
+          pip install pycodestyle
+      - name: Run check
+        run: |
+          pycodestyle . --ignore E501,E722
+
   pyinstaller-build:
     name: Build an app
     runs-on: windows-latest
+    needs: pep8check
     steps:
       - uses: sayyid5416/pyinstaller@v1
         with:
