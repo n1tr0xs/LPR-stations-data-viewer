@@ -12,6 +12,7 @@ env:
   GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
   GITHUB_REPOSITORY: ${{ github.repository }}
   tag: ${{ github.ref_name }}
+  BUILD_APP_NAME: 'LPR stations data viewer'
       
 jobs:
   pep8check:
@@ -49,15 +50,15 @@ jobs:
       - name: Check the directory
         run: |
           ls -r .
+      - name: Archive builded app
+        run: |
+          zip -r "${GITHUB_REPOSITORY#*/}.zip" "${BUILD_APP_NAME}"
       - name: Create release
         run: |
           gh release create "${tag}" \
               --repo="${GITHUB_REPOSITORY}" \
               --title="${GITHUB_REPOSITORY#*/} ${tag}" \
               --generate-notes
-      - name: Archive builded app
-        run: |
-          zip -r "${GITHUB_REPOSITORY#*/}.zip" App
       - name: Upload asset
         run: |
           gh release upload "${tag}" "${GITHUB_REPOSITORY#*/}.zip" \
