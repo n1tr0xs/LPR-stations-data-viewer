@@ -34,7 +34,15 @@ jobs:
       - name: Build an app
         run: |
           pyinstaller --noconfirm --clean --log-level FATAL --onedir --name "LPR stations data viewer" --contents-directory "." --noconsole --icon "icon.ico" --add-data "icon.ico:." --add-data "settings.ini:." "main.py"
-          
+      - name: DIR
+        run: |
+          dir /S
+      - name: Upload a Build Artifact
+        uses: actions/upload-artifact@v4.3.3
+        with:
+          name: App
+
+        
   release:    
     name: Create release
     runs-on: ubuntu-22.04
