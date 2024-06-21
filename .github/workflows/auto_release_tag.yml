@@ -20,23 +20,20 @@ jobs:
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Set up Python 3.10
-        uses: actions/setup-python@v3
+      - name: Set up Python
+        uses: actions/setup-python@v4
         with:
           python-version: "3.10"
-      - name: Install dependencies
+      - name: Install Dependencies
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt pyinstaller pycodestyle
-      - name: PEP8 check
+      - name: PEP8 Check
         run: |
           pycodestyle . --ignore E501,E722
       - name: Build an app
         run: |
           pyinstaller --noconfirm --clean --log-level FATAL --onedir --name "${env:BUILD_APP_NAME}" --contents-directory "." --noconsole --icon "icon.ico" --add-data "icon.ico:." --add-data "settings.ini:." "main.py"
-      - name: DIR
-        run: |
-          dir
       - name: Upload a Build Artifact
         uses: actions/upload-artifact@v4.3.3
         with:
@@ -54,9 +51,6 @@ jobs:
         with:
           name: App
           path: .
-      - name: Check the directory
-        run: |
-          ls -r .
       - name: Archive builded app
         run: |
           zip -r "${GITHUB_REPOSITORY#*/}.zip" "${BUILD_APP_NAME}"
