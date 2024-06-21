@@ -46,6 +46,9 @@ jobs:
         with:
           name: App
           path: .
+      - name: Check the directory
+        run: |
+          ls -r .
       - name: Create release
         run: |
           gh release create "${tag}" \
