@@ -28,16 +28,12 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt pyinstaller pycodestyle
-      - name: DIR
-        run: |
-          dir D:\
       - name: PEP8 check
         run: |
           pycodestyle . --ignore E501,E722
       - name: Build an app
         run: |
-          pyinstaller --onedir --name "${BUILD_APP_NAME}" --contents-directory "." --noconsole \
-          --icon "icon.ico" --add-data "icon.ico";"." --add-data "settings.ini";"." "main.py"
+          pyinstaller --onedir --name "${BUILD_APP_NAME}" --contents-directory "." --noconsole --icon "icon.ico" --add-data "icon.ico";"." --add-data "settings.ini";"." "main.py"
           
   release:    
     name: Create release
