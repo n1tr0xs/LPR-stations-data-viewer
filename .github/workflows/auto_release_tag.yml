@@ -36,6 +36,7 @@ jobs:
           python_ver: '3.10'
           spec: 'build.spec'
           upload_exe_with_name: App
+          requirements: 'requirements.txt'
           
   release:    
     name: Create release
